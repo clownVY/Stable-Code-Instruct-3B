@@ -1,0 +1,28 @@
+    @Override
+    public Map<String, Object> convertRequest(CompletionRequest completionRequest) {
+        Map<String, Object> paramsMap = openAdapterConvert.convertRequest(completionRequest);
+        if (paramsMap.containsKey("top_p")) {
+            paramsMap.put("temperature", paramsMap.get("top_p"));
+            paramsMap.remove("top_p");
+        }
+        if (paramsMap.containsKey("stop")) {
+            paramsMap.remove("stop");
+        }
+        List<Map<String, Object>> tools = completionRequest.getTools();
+        if (tools.size() > 0) {
+            Map<String, Object> tool = tools.get(0);
+            String type = MapHelper.getMapVal(tool, "type", "");
+            if (StringUtils.hasLength(type)) {
+                if (type.equals(ConstantSystem.EXTRA_TOOL_TYPE_WEB_SEARCH)) {
+                    paramsMap.put("ref_mode", "SEARCH");
+                } else if (type.equals(ConstantSystem.EXTRA_TOOL_TYPE_FULL_TEXT)) {
+                    List<String> refs = MapHelper.getMapVal(tool, "refs", new ArrayList<>());
+                    if(refs.size() > 0) {
+                        paramsMap.put("ref_mode", "FULL_TEXT");
+                        paramsMap.put("refs", refs.toArray());
+                    }
+                }
+            }
+        }
+        return paramsMap;
+    }
